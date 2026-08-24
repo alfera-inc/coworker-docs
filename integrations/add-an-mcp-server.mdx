@@ -1,0 +1,211 @@
+---
+title: "How to Add an MCP Server to Your Alfera Workspace"
+sidebarTitle: "Add an MCP Server"
+description: "Connect any MCP server to Alfera by pasting its address. Its tools become available to your workers, with the same approvals, encryption, and per-worker controls as every other integration."
+---
+
+Alfera ships with thousands of integrations. When the tool you need is not one of them — because it is new, or because your own team runs it — you can connect it yourself, as long as it speaks the Model Context Protocol.
+
+You paste an address. Alfera asks the server what it can do, and each of its tools becomes available to your workers alongside Gmail, Slack, and everything else.
+
+<Note>
+  Adding a server is a workspace admin action. Any member can use its tools once an admin turns them on for a worker.
+</Note>
+
+## Before you start
+
+You need the server's address. It usually ends in `/mcp`, for example `https://mcp.linear.app/mcp`. Vendors publish it in their own documentation, normally under a heading like **MCP server** or **Remote MCP**.
+
+Two addresses will not work:
+
+- Anything that does not start with `https`.
+- Anything running on your own machine, such as `http://localhost:3000/mcp`. Alfera runs in the cloud and cannot reach your laptop. If this is you, the next section is the one you want.
+
+## If your server runs on your own machine
+
+Servers you run yourself — an internal tool, something you are still building, a
+product you self-host — usually listen on `localhost`. Alfera cannot reach that,
+so you give it a public address. Three steps, about five minutes.
+
+<Steps>
+  <Step title="Listen on more than localhost">
+    Most servers bind to `127.0.0.1` by default, which nothing outside the machine can reach. Start yours so it accepts outside connections — usually a `--bind 0.0.0.0` or `--host 0.0.0.0` flag, and note the port it uses.
+  </Step>
+  <Step title="Give it a public address">
+    A tunnel puts an `https` address in front of a port on your machine. [ngrok](https://ngrok.com) is the usual choice and the free tier is enough.
+
+    ```bash
+    ngrok http 3131
+    ```
+
+    It prints an address like `https://sunny-otter-1234.ngrok-free.dev`. **The address you paste into Alfera is that, plus your server's MCP path** — normally `/mcp`:
+
+    ```
+    https://sunny-otter-1234.ngrok-free.dev/mcp
+    ```
+
+    If your server has a setting for its own public URL, set it to the tunnel address. Servers that build sign-in links need it to produce links that work.
+  </Step>
+  <Step title="Make a token">
+    A server reachable from the internet needs a credential. Create one however your server does it, and keep it for the next section.
+  </Step>
+</Steps>
+
+<Warning>
+  A tunnel lives as long as the command is running. Close the terminal, sleep the laptop, or restart, and the address stops answering — Alfera will report the server as unreachable, and a free ngrok address changes every restart unless you reserve one.
+
+  This is fine for trying it out. For daily use, run the server on a host that stays up, with a stable domain.
+</Warning>
+
+## Add the server
+
+<Steps>
+  <Step title="Open Integrations">
+    In the Alfera app, click **Integrations** in the sidebar menu.
+  </Step>
+  <Step title="Choose MCP server">
+    Under **Connect anything**, click **MCP server**.
+
+    <Frame>
+      <img src="/images/add-an-mcp-server/connect-anything-mcp-server.png" alt="The Connect anything row at the top of Integrations, with the MCP server tile and its plus button" />
+    </Frame>
+  </Step>
+  <Step title="Paste the address">
+    Enter the server's URL and click **Add server**. Alfera contacts the server while you wait, and saves nothing until it answers.
+
+    <Frame>
+      <img src="/images/add-an-mcp-server/add-mcp-server-dialog.png" alt="The Add MCP server dialog with the Server URL field and the My server uses a token link beneath it" />
+    </Frame>
+  </Step>
+  <Step title="Finish however the server asks">
+    Servers authenticate in three different ways. Each one is covered below.
+  </Step>
+</Steps>
+
+## The three answers
+
+### The server is ready
+
+Open servers need no credential. Alfera reads their tool list straight away and tells you how many tools it added.
+
+<Frame>
+  <img src="/images/add-an-mcp-server/server-is-ready.png" alt="The dialog reporting that the server is connected and how many tools were added" />
+</Frame>
+
+Click **Done**. The tools are in your workspace and your workers can use them straight away.
+
+### The server wants you to sign in
+
+Most hosted servers — Linear, Notion, Sentry, Asana, Stripe — authenticate with your own account there. Alfera works out how, registers itself with the vendor, and gives you a link.
+
+Click **Sign in**. The vendor's own consent screen opens in a new tab, showing Alfera as the application requesting access. Approve it there.
+
+You type your password on the vendor's site, never in Alfera. When you return, the dialog closes on its own and the server's tools appear.
+
+### The server uses a token
+
+Servers your own team runs usually authenticate with a token you generate yourself. In the dialog, click **My server uses a token** and paste it.
+
+<Frame>
+  <img src="/images/add-an-mcp-server/access-token-field.png" alt="The same dialog after clicking My server uses a token, showing the Access token field" />
+</Frame>
+
+Alfera checks the token against the server before saving anything, so a wrong or expired token is refused while you are still looking at the dialog, rather than discovered later as tools that quietly fail. Once accepted, the token is encrypted and stored the same way every other credential is.
+
+<Warning>
+  Never paste a token into a chat message. Anything typed in chat stays in the conversation and in the worker's context. Tokens belong in this field, which is a password input.
+</Warning>
+
+## Add a server by asking
+
+You can also ask a worker to do it, in chat or in Slack:
+
+```text
+Connect the MCP server at https://mcp.deepwiki.com/mcp
+```
+
+The worker adds the server and replies with a sign-in link if the server needs one. This is the same action as the dialog, and it needs the same admin permission — asking a worker is not a way around it.
+
+A server that needs a token is the one case a worker declines, and it points you back to **Integrations**. That is deliberate: the token would otherwise be written into the conversation.
+
+## Using the tools
+
+There is nothing to switch on. A worker searches the workspace catalogue when it needs something and finds the server's tools alongside every other integration, so you use them by asking:
+
+```text
+Search your tools for the ones this server added, then use them to answer my question
+```
+
+Naming the server helps a worker narrow a long list — a server can contribute a hundred tools at once.
+
+## What Alfera does with a server you add
+
+A server you paste is not one Alfera has vetted. Several things follow from that.
+
+**Tool descriptions come from the server and are stored word for word.** Your worker reads them, so a dishonest server can put instructions in front of it. Alfera does not rewrite them, because rewriting would misrepresent what the tool accepts.
+
+**A server's own safety claims are not believed.** The protocol lets a server mark a tool as read-only. A dishonest server sets that flag as easily as an honest one, so Alfera ignores it and treats every tool from a server you added as one that changes something.
+
+**Tools that disappear are retired, not deleted.** When a server drops a tool, its record stays so your history still points at it. When a server is unreachable, nothing changes at all — an outage is not evidence that a tool is gone.
+
+**Addresses are checked before they are fetched.** Alfera resolves the hostname, refuses private and internal addresses, and refuses to follow redirects, so an address cannot be used to reach anything inside Alfera's network.
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Alfera cannot reach the server">
+    Open the address in a browser. Pasting a documentation page is the most common mistake — the address you want is the server itself, usually ending in `/mcp`, and it does not render as a readable page.
+
+    Running it yourself? Check the tunnel is still up, that the server was started with `--bind 0.0.0.0` rather than the default localhost, and that you pasted the tunnel address plus `/mcp` — not the bare tunnel address, and not `localhost`.
+  </Accordion>
+
+  <Accordion title="Sign-in fails after the consent screen">
+    Some servers require a specific plan, or an administrator to enable access, before they issue a token. Check the vendor's requirements for their MCP server.
+
+    If the message names a scope, the server is refusing a permission it advertises. Send the exact message to the vendor.
+  </Accordion>
+
+  <Accordion title="The server needs a client ID">
+    A small number of servers, GitHub among them, do not let applications register themselves and need credentials arranged in advance. Contact us and we will configure it.
+  </Accordion>
+
+  <Accordion title="The server is added but a worker will not use its tools">
+    Name the server in your request, for example "use the Linear tools to...". A worker searches the catalogue by what it is trying to do, and a tool named for something else can be missed.
+
+    Check the connection is still **Active** under **Integrations**. A server behind a tunnel or a laptop stops answering when that machine sleeps.
+  </Accordion>
+
+  <Accordion title="Alfera says the server is already in this workspace">
+    It is connected already. Find it in **Integrations** under the vendor's name, such as Linear, rather than the address you pasted.
+  </Accordion>
+</AccordionGroup>
+
+## Servers to try
+
+<CardGroup cols={2}>
+  <Card title="DeepWiki" icon="book">
+    `https://mcp.deepwiki.com/mcp`
+
+    Answers questions about any public GitHub repository. No sign-in.
+  </Card>
+  <Card title="Context7" icon="file-lines">
+    `https://mcp.context7.com/mcp`
+
+    Up-to-date documentation for libraries and frameworks.
+  </Card>
+  <Card title="Linear" icon="list-check">
+    `https://mcp.linear.app/mcp`
+
+    Issues, projects, and cycles. Signs in with your Linear account.
+  </Card>
+  <Card title="Notion" icon="note-sticky">
+    `https://mcp.notion.com/mcp`
+
+    Pages and databases. Signs in with your Notion account.
+  </Card>
+</CardGroup>
+
+## Next steps
+
+- [Connect a Tool](/integrations/connect-a-tool) to add an integration Alfera already supports
+- [Approvals](/control/approvals) to control which actions wait for a human

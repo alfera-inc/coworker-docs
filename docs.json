@@ -45,7 +45,8 @@
             "group": "Integrations & Connections",
             "pages": [
               "integrations/overview",
-              "integrations/connect-a-tool"
+              "integrations/connect-a-tool",
+              "integrations/add-an-mcp-server"
             ]
           },
           {
