@@ -19,7 +19,51 @@ You need the server's address. It usually ends in `/mcp`, for example `https://m
 Two addresses will not work:
 
 - Anything that does not start with `https`.
-- Anything running on your own machine, such as `http://localhost:3000/mcp`. Alfera runs in the cloud and cannot reach your laptop. Put the server on a host with a public address first.
+- Anything running on your own machine, such as `http://localhost:3000/mcp`. Alfera runs in the cloud and cannot reach your laptop. If this is you, the next section is the one you want.
+
+## If your server runs on your own machine
+
+Servers you run yourself — gbrain, an internal tool, something you are still building — usually listen on `localhost`. Alfera cannot reach that, so you give it a public address. Three steps, about five minutes.
+
+<Steps>
+  <Step title="Listen on more than localhost">
+    Most servers bind to `127.0.0.1` by default, which nothing outside the machine can reach. Start yours so it accepts outside connections.
+
+    ```bash
+    gbrain serve --http --port 3131 --bind 0.0.0.0
+    ```
+  </Step>
+  <Step title="Give it a public address">
+    A tunnel puts an `https` address in front of the port on your machine. [ngrok](https://ngrok.com) is the usual choice and the free tier is enough.
+
+    ```bash
+    ngrok http 3131
+    ```
+
+    It prints an address like `https://straw-spender-tissue.ngrok-free.dev`. **Your MCP address is that, plus the server's path** — for gbrain, `https://straw-spender-tissue.ngrok-free.dev/mcp`.
+
+    If your server asks for its own public URL, give it the same one. gbrain does:
+
+    ```bash
+    gbrain serve --http --port 3131 --bind 0.0.0.0 --public-url https://straw-spender-tissue.ngrok-free.dev
+    ```
+  </Step>
+  <Step title="Make a token">
+    A server on the open internet needs a credential. Mint one and keep it for the next section.
+
+    ```bash
+    gbrain auth create alfera --scopes read,write
+    ```
+
+    It prints a token starting `gbrain_`. It is shown once.
+  </Step>
+</Steps>
+
+<Warning>
+  A tunnel lives as long as the command is running. Close the terminal, sleep the laptop, or restart, and the address stops answering — Alfera will report the server as unreachable, and a free ngrok address changes every restart unless you reserve one.
+
+  This is fine for trying it out. For daily use, run the server on a host that stays up, with a stable domain.
+</Warning>
 
 ## Add the server
 
@@ -29,9 +73,17 @@ Two addresses will not work:
   </Step>
   <Step title="Choose MCP server">
     Under **Connect anything**, click **MCP server**.
+
+    <Frame>
+      <img src="/images/add-an-mcp-server/connect-anything-mcp-server.png" alt="The Connect anything row at the top of Integrations, with the MCP server tile and its plus button" />
+    </Frame>
   </Step>
   <Step title="Paste the address">
     Enter the server's URL and click **Add server**. Alfera contacts the server while you wait, and saves nothing until it answers.
+
+    <Frame>
+      <img src="/images/add-an-mcp-server/add-mcp-server-dialog.png" alt="The Add MCP server dialog with the Server URL field and the My server uses a token link beneath it" />
+    </Frame>
   </Step>
   <Step title="Finish however the server asks">
     Servers authenticate in three different ways. Each one is covered below.
@@ -44,7 +96,11 @@ Two addresses will not work:
 
 Open servers need no credential. Alfera reads their tool list straight away and tells you how many tools it added.
 
-Click **Done**. The tools are in your workspace. Turn them on for a worker to use them.
+<Frame>
+  <img src="/images/add-an-mcp-server/server-is-ready.png" alt="The dialog reporting that the server is connected and how many tools were added" />
+</Frame>
+
+Click **Done**. The tools are in your workspace and your workers can use them straight away.
 
 ### The server wants you to sign in
 
@@ -57,6 +113,10 @@ You type your password on the vendor's site, never in Alfera. When you return, t
 ### The server uses a token
 
 Servers your own team runs usually authenticate with a token you generate yourself. In the dialog, click **My server uses a token** and paste it.
+
+<Frame>
+  <img src="/images/add-an-mcp-server/access-token-field.png" alt="The same dialog after clicking My server uses a token, showing the Access token field" />
+</Frame>
 
 Alfera checks the token against the server before saving anything, so a wrong or expired token is refused while you are still looking at the dialog, rather than discovered later as tools that quietly fail. Once accepted, the token is encrypted and stored the same way every other credential is.
 
@@ -76,11 +136,23 @@ The worker adds the server and replies with a sign-in link if the server needs o
 
 A server that needs a token is the one case a worker declines, and it points you back to **Integrations**. That is deliberate: the token would otherwise be written into the conversation.
 
-## Turn the tools on for a worker
+## Check it worked
 
-Adding a server gives its tools to nobody. Every worker starts with nothing enabled.
+Find the server under **Integrations**. It appears under the name the server calls itself, with its account marked **Active**.
 
-Open the worker, go to its tools, search for the server by name, and enable the ones it should have. Give each worker the tools its job needs and no more.
+<Frame>
+  <img src="/images/add-an-mcp-server/connection-active.png" alt="The server's page under Integrations, showing one connected account with status Active" />
+</Frame>
+
+## Using the tools
+
+There is nothing to switch on. A worker searches the workspace catalogue when it needs something and finds the server's tools alongside every other integration, so you use them by asking:
+
+```text
+Search your tools for recall and tell me what you know about our Puglia venue
+```
+
+Naming the server helps a worker narrow a long list — a server can contribute a hundred tools at once.
 
 ## What Alfera does with a server you add
 
@@ -100,7 +172,7 @@ A server you paste is not one Alfera has vetted. Several things follow from that
   <Accordion title="Alfera cannot reach the server">
     Open the address in a browser. Pasting a documentation page is the most common mistake — the address you want is the server itself, usually ending in `/mcp`, and it does not render as a readable page.
 
-    Check that the address starts with `https` and is not running on your own machine.
+    Running it yourself? Check the tunnel is still up, that the server was started with `--bind 0.0.0.0` rather than the default localhost, and that you pasted the tunnel address plus `/mcp` — not the bare tunnel address, and not `localhost`.
   </Accordion>
 
   <Accordion title="Sign-in fails after the consent screen">
@@ -114,7 +186,9 @@ A server you paste is not one Alfera has vetted. Several things follow from that
   </Accordion>
 
   <Accordion title="The server is added but a worker will not use its tools">
-    Tools are off by default for every worker. Open the worker's tools, search for the server, and enable what it needs.
+    Name the server in your request, for example "use the gbrain tools to...". A worker searches the catalogue by what it is trying to do, and a tool named for something else can be missed.
+
+    Check the connection is still **Active** under **Integrations**. A server behind a tunnel or a laptop stops answering when that machine sleeps.
   </Accordion>
 
   <Accordion title="Alfera says the server is already in this workspace">
