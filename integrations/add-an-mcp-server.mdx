@@ -23,39 +23,31 @@ Two addresses will not work:
 
 ## If your server runs on your own machine
 
-Servers you run yourself — gbrain, an internal tool, something you are still building — usually listen on `localhost`. Alfera cannot reach that, so you give it a public address. Three steps, about five minutes.
+Servers you run yourself — an internal tool, something you are still building, a
+product you self-host — usually listen on `localhost`. Alfera cannot reach that,
+so you give it a public address. Three steps, about five minutes.
 
 <Steps>
   <Step title="Listen on more than localhost">
-    Most servers bind to `127.0.0.1` by default, which nothing outside the machine can reach. Start yours so it accepts outside connections.
-
-    ```bash
-    gbrain serve --http --port 3131 --bind 0.0.0.0
-    ```
+    Most servers bind to `127.0.0.1` by default, which nothing outside the machine can reach. Start yours so it accepts outside connections — usually a `--bind 0.0.0.0` or `--host 0.0.0.0` flag, and note the port it uses.
   </Step>
   <Step title="Give it a public address">
-    A tunnel puts an `https` address in front of the port on your machine. [ngrok](https://ngrok.com) is the usual choice and the free tier is enough.
+    A tunnel puts an `https` address in front of a port on your machine. [ngrok](https://ngrok.com) is the usual choice and the free tier is enough.
 
     ```bash
     ngrok http 3131
     ```
 
-    It prints an address like `https://straw-spender-tissue.ngrok-free.dev`. **Your MCP address is that, plus the server's path** — for gbrain, `https://straw-spender-tissue.ngrok-free.dev/mcp`.
+    It prints an address like `https://sunny-otter-1234.ngrok-free.dev`. **The address you paste into Alfera is that, plus your server's MCP path** — normally `/mcp`:
 
-    If your server asks for its own public URL, give it the same one. gbrain does:
-
-    ```bash
-    gbrain serve --http --port 3131 --bind 0.0.0.0 --public-url https://straw-spender-tissue.ngrok-free.dev
     ```
+    https://sunny-otter-1234.ngrok-free.dev/mcp
+    ```
+
+    If your server has a setting for its own public URL, set it to the tunnel address. Servers that build sign-in links need it to produce links that work.
   </Step>
   <Step title="Make a token">
-    A server on the open internet needs a credential. Mint one and keep it for the next section.
-
-    ```bash
-    gbrain auth create alfera --scopes read,write
-    ```
-
-    It prints a token starting `gbrain_`. It is shown once.
+    A server reachable from the internet needs a credential. Create one however your server does it, and keep it for the next section.
   </Step>
 </Steps>
 
@@ -149,7 +141,7 @@ Find the server under **Integrations**. It appears under the name the server cal
 There is nothing to switch on. A worker searches the workspace catalogue when it needs something and finds the server's tools alongside every other integration, so you use them by asking:
 
 ```text
-Search your tools for recall and tell me what you know about our Puglia venue
+Search your tools for the ones this server added, then use them to answer my question
 ```
 
 Naming the server helps a worker narrow a long list — a server can contribute a hundred tools at once.
@@ -186,7 +178,7 @@ A server you paste is not one Alfera has vetted. Several things follow from that
   </Accordion>
 
   <Accordion title="The server is added but a worker will not use its tools">
-    Name the server in your request, for example "use the gbrain tools to...". A worker searches the catalogue by what it is trying to do, and a tool named for something else can be missed.
+    Name the server in your request, for example "use the Linear tools to...". A worker searches the catalogue by what it is trying to do, and a tool named for something else can be missed.
 
     Check the connection is still **Active** under **Integrations**. A server behind a tunnel or a laptop stops answering when that machine sleeps.
   </Accordion>
