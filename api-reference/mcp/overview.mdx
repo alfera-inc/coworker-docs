@@ -1,0 +1,119 @@
+---
+title: "Brain MCP Server: workspace memory as tools"
+sidebarTitle: "Overview"
+description: "Mount your Alfera workspace brain as tools in Claude Code, Cursor, or your own agent via the MCP server at https://api.alfera.ai/v1/mcp."
+---
+
+The Brain MCP server exposes your Alfera workspace brain as callable tools in any MCP-compatible agent. Point Claude Code, Cursor, or your own harness at a single URL and your agent can search memory, read context, teach new facts, and ask the Alfera worker for answers.
+
+The server is streamable HTTP and stateless: no session to open, resume, or close. Every request carries its own key, so restarting your client or load-balancing across instances changes nothing.
+
+## Endpoint
+
+```text
+https://api.alfera.ai/v1/mcp
+```
+
+## Key facts
+
+- **Streamable HTTP, stateless.** No session to open or close. Every request is independent.
+- **Protocol versions.** The server speaks MCP `2025-06-18` and accepts `2025-03-26` and `2024-11-05`.
+- **Same brain, same keys.** It uses the same workspace brain and the same API keys as the [Brain API](/api-reference/overview). Disclosure rules are identical: an `external` key receives only `profile_fact`, `preference`, `decision`, and `observation`, and never facts about your team, `agent_inferred` facts, or facts about an end user the call did not name.
+
+## Connect
+
+Create a key in the Alfera app under **Settings → API Keys**, pick its scopes and audience, and export the secret:
+
+```bash
+export ALFERA_API_KEY=ak_live_...
+```
+
+<Tabs>
+  <Tab title="Claude Code">
+    Add the MCP server with the `claude mcp add` command:
+
+    ```bash
+    claude mcp add --transport http alfera-brain https://api.alfera.ai/v1/mcp \
+      --header "Authorization: Bearer $ALFERA_API_KEY"
+    ```
+  </Tab>
+  <Tab title="Cursor">
+    Add the server to `~/.cursor/mcp.json` (global) or `.cursor/mcp.json` (one project):
+
+    ```json
+    {
+      "mcpServers": {
+        "alfera-brain": {
+          "url": "https://api.alfera.ai/v1/mcp",
+          "headers": { "Authorization": "Bearer ak_live_..." }
+        }
+      }
+    }
+    ```
+  </Tab>
+  <Tab title="Other">
+    Anything that speaks Streamable HTTP can POST JSON-RPC to `https://api.alfera.ai/v1/mcp` with `Authorization: Bearer <key>` on every request. `X-Api-Key: <key>` is accepted as well.
+
+    The endpoint is POST-only. `GET` and `DELETE` return `405 method_not_allowed`.
+  </Tab>
+</Tabs>
+
+## Verify with whoami
+
+Call `whoami` to confirm the connection. It needs no scope, so it answers for any live key and reports what the connection can do.
+
+```bash
+curl https://api.alfera.ai/v1/mcp \
+  -H "Authorization: Bearer $ALFERA_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": 1,
+    "method": "tools/call",
+    "params": {
+      "name": "whoami",
+      "arguments": {}
+    }
+  }'
+```
+
+<ResponseField name="key_name" type="string">
+  Human-readable name for this key, for example `support-bot`.
+</ResponseField>
+
+<ResponseField name="key_prefix" type="string">
+  Prefix of the key, for example `ak_live_x7f4`.
+</ResponseField>
+
+<ResponseField name="scopes" type="array">
+  Array of scopes this key is allowed to use, for example `["memory.read", "answers.write"]`.
+</ResponseField>
+
+<ResponseField name="key_audience" type="string">
+  Audience for the key, for example `external`.
+</ResponseField>
+
+<ResponseField name="rate_limit" type="object">
+  Object with `requests_per_window` and `window_seconds`, for example `{ "requests_per_window": 120, "window_seconds": 60 }`.
+</ResponseField>
+
+Example response:
+
+```json
+{
+  "key_name": "support-bot",
+  "key_prefix": "ak_live_x7f4",
+  "scopes": ["memory.read", "answers.write"],
+  "key_audience": "external",
+  "rate_limit": { "requests_per_window": 120, "window_seconds": 60 }
+}
+```
+
+<Tip>
+  `tools/list` only advertises what this key's scopes allow. A `memory.read`-only key never sees `ask_worker`. If a tool is missing from your agent's list, the key lacks its scope.
+</Tip>
+
+## Next steps
+
+- Browse the full [Brain MCP tools reference](/api-reference/mcp/tools) for arguments, scopes, and usage patterns.
+- Read the [Brain API overview](/api-reference/overview) for the REST equivalents and field-level detail.

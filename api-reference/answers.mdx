@@ -1,0 +1,207 @@
+---
+title: "POST /v1/answers: Ask the Worker and Stream or Poll a Reply"
+sidebarTitle: "Answers"
+description: "Run the workspace worker on a question and stream the reply as server-sent events, or queue it and poll by answer_id. Scope: answers.write."
+---
+
+Run the Alfera worker on a question and get back an answer built from your workspace memory. There are two ways to call this endpoint: streaming (the default) and queued. Use streaming when you can hold a connection open and want to show the answer as it is typed. Use queued when you are inside a webhook handler, a serverless function, or a job queue, and need to return immediately and poll later.
+
+## Endpoint
+
+```text
+POST https://api.alfera.ai/v1/answers
+GET  https://api.alfera.ai/v1/answers/:answer_id
+```
+
+**Required scope:** `answers.write`
+
+## Streaming mode (default)
+
+Streaming is the default behavior when you omit the `stream` field or set it to `true`. The response is `text/event-stream`.
+
+### Request fields
+
+<ParamField body="input" type="string" required>
+  The question you want the worker to answer. 1 to 8000 characters.
+</ParamField>
+
+<ParamField body="conversation_id" type="string">
+  Your own thread key. Reuse it to continue a conversation. 1 to 200 characters.
+</ParamField>
+
+<ParamField body="end_user" type="object">
+  `{ id, name? }`. Name the person so the worker can surface facts about them.
+</ParamField>
+
+<ParamField body="agent_slug" type="string">
+  Which worker answers. Defaults to `main`. 1 to 200 characters.
+</ParamField>
+
+<ParamField body="stream" type="boolean">
+  Defaults to `true`. Keep it `true` for streaming mode.
+</ParamField>
+
+<ParamField body="include" type="array">
+  Pass `["sources"]` to receive the facts the answer was built from.
+</ParamField>
+
+### Example request
+
+```bash
+curl -N https://api.alfera.ai/v1/answers \
+  -H "Authorization: Bearer $ALFERA_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "input": "Can Maria move her wedding date again without losing the deposit?",
+    "conversation_id": "support-ticket-9931",
+    "end_user": {"id": "cust_419", "name": "Maria"},
+    "include": ["sources"]
+  }'
+```
+
+### Event sequence
+
+The stream sends five possible event names and no others. Every stream ends with `done`.
+
+| Event | When it arrives | Data shape |
+| --- | --- | --- |
+| `answer.created` | First | `{"answer_id":"...","conversation_id":"..."}` |
+| `answer.delta` | Repeatedly | `{"text":"..."}` (concatenate these for the live output) |
+| `answer.completed` | Before `done` | Full result including `output_text`, `usage`, and `sources` |
+| `answer.failed` | Before `done` on error | `{"error":{"code":"...","message":"..."}}` |
+| `done` | Always last | `{"ok":true}` |
+
+### Example stream
+
+```text
+event: answer.created
+data: {"answer_id":"run_01k9p41r2d6ryb8x3nq7t5v0ce","conversation_id":"support-ticket-9931"}
+
+event: answer.delta
+data: {"text":"She can move it"}
+
+event: answer.delta
+data: {"text":" without losing the deposit"}
+
+event: answer.completed
+data: {"answer_id":"run_01k9p41r2d6ryb8x3nq7t5v0ce","status":"completed","output_text":"She can move it without losing the deposit, as long as the change lands more than 30 days before the current date.","conversation_id":"support-ticket-9931","usage":{"input_tokens":2841,"output_tokens":96},"sources":[{"fact_id":"fact_01k9p3v8m7f2ha6z0qc4rjxn5w","fact_text":"Deposits are non-refundable inside 30 days of the event date.","kind":"decision","subject":"refund policy"}]}
+
+event: done
+data: {"ok":true}
+```
+
+<Warning>
+  Streaming creates are not idempotent. Retrying after a disconnect starts a new run. For retry safety, use queued mode with an `Idempotency-Key`.
+</Warning>
+
+## Queued mode
+
+Set `stream: false` to queue the question and receive an `answer_id` immediately. Poll `GET /v1/answers/:answer_id` until the status is `completed` or `failed`.
+
+### Extra fields for queued mode
+
+<ParamField body="stream" type="boolean" required>
+  Must be `false`.
+</ParamField>
+
+<ParamField header="Idempotency-Key" type="string">
+  Retry key. Send the same key with the same body to get the same `answer_id` without creating a second run.
+</ParamField>
+
+### Example request
+
+```bash
+curl https://api.alfera.ai/v1/answers \
+  -H "Authorization: Bearer $ALFERA_API_KEY" \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: ticket-9931-reply-1" \
+  -d '{
+    "input": "Can Maria move her wedding date again without losing the deposit?",
+    "conversation_id": "support-ticket-9931",
+    "end_user": {"id": "cust_419"},
+    "stream": false
+  }'
+```
+
+### Queued response
+
+```json
+{
+  "data": {
+    "answer_id": "event_01k9p3zq8w4m1te6h2ndkbx9pf",
+    "status": "queued"
+  }
+}
+```
+
+### Idempotency rules
+
+- Repeating the same `Idempotency-Key` with the exact same body returns the original response: same `answer_id`, no second run.
+- Reusing the same key with a different request returns `409 idempotency_key_reused`.
+- Always generate a fresh key for each new question.
+
+## Read an answer
+
+```text
+GET https://api.alfera.ai/v1/answers/:answer_id
+```
+
+Poll this endpoint until `status` is `completed` or `failed`.
+
+### Query parameters
+
+<ParamField query="include" type="string">
+  Pass `sources` to include the grounding facts. `sources` is the only supported value.
+</ParamField>
+
+### Example request
+
+```bash
+curl "https://api.alfera.ai/v1/answers/event_01k9p3zq8w4m1te6h2ndkbx9pf?include=sources" \
+  -H "Authorization: Bearer $ALFERA_API_KEY"
+```
+
+### Example response
+
+```json
+{
+  "data": {
+    "answer_id": "event_01k9p3zq8w4m1te6h2ndkbx9pf",
+    "status": "completed",
+    "output_text": "She can move it without losing the deposit, as long as the change lands more than 30 days before the current date.",
+    "conversation_id": "support-ticket-9931",
+    "usage": { "input_tokens": 2841, "output_tokens": 96 },
+    "sources": [
+      { "fact_id": "fact_01k9p3v8m7f2ha6z0qc4rjxn5w", "fact_text": "Deposits are non-refundable inside 30 days of the event date.", "kind": "decision", "subject": "refund policy" }
+    ]
+  }
+}
+```
+
+### Polling guidance
+
+Answers take seconds to minutes. Poll every 1 to 2 seconds, not every 50 milliseconds. The rate limit is shared with your other calls. While `status` is not `completed`, `output_text` is `""`.
+
+### Status lifecycle
+
+```text
+queued -> in_progress -> completed
+                   \-> failed
+```
+
+A `failed` answer carries an `error` object with the same shape as the stream's `answer.failed` event.
+
+## Error codes
+
+| Code | Status | What to do |
+| --- | --- | --- |
+| `api_key_invalid` | 401 | The key is wrong or the header is missing. Send `Authorization: Bearer $ALFERA_API_KEY`. |
+| `api_key_revoked` | 401 | Someone revoked this key. Create a new one in Settings → API Keys. |
+| `api_key_expired` | 401 | The key passed its expiry date. Create a new one. |
+| `scope_missing` | 403 | Add the scope named in `details.scope`. That means creating a new key, since scopes are fixed at creation. |
+| `out_of_credits` | 402 | The workspace balance hit zero. Add credits or upgrade the plan; nothing runs until you do. |
+| `rate_limited` | 429 | You passed 120 requests in a 60-second window. Wait `details.retry_after_seconds`, then retry. |
+| `conversation_busy` | 409 | This `conversation_id` is still answering the previous message. Wait for it, or use a different conversation. |
+| `idempotency_key_reused` | 409 | This `Idempotency-Key` was already used for a different request. Retries must send the same body; a new question needs a new key. |
+| `validation_error` | 422 | The body did not match the schema. `details` names the offending fields. |
+| `not_found` | 404 | No answer with that `answer_id` in this workspace. |

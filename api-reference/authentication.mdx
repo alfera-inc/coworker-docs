@@ -1,0 +1,93 @@
+---
+title: "Brain API Authentication: API Keys, Scopes, and Audiences"
+sidebarTitle: "Authentication"
+description: "Create an API key in Settings, choose its scopes (memory.read, memory.write, answers.write) and audience (internal or external), then pass it as a Bearer token."
+---
+
+Every request to the Brain API must carry an API key. You create keys in the Alfera app under **Settings → API Keys**. Each key has scopes (what it may do) and an audience (how much of the brain it may see).
+
+## Create a key
+
+1. Open the Alfera app and go to **Settings → API Keys**.
+2. Click **Create key**.
+3. Choose at least one scope and pick an audience.
+4. Copy the secret immediately. It is shown once at creation and cannot be recovered later.
+
+The secret starts with `ak_live_` in production and `ak_test_` on the dev deployment. That prefix is a label, not a sandbox mode, because each environment only knows its own keys.
+
+<Note>
+  If you lose the secret, revoke the key and create a new one. A revoked key fails on its next request.
+</Note>
+
+## Scopes
+
+A scope controls which endpoints the key may call. A key needs at least one scope.
+
+| Scope | Allows |
+| --- | --- |
+| `memory.read` | `POST /v1/memory/search` and `POST /v1/memory/context` |
+| `memory.write` | `POST /v1/memory/facts` |
+| `answers.write` | `POST /v1/answers` and `GET /v1/answers/:answer_id` |
+
+## Audience
+
+The audience controls how much of the brain the key can read.
+
+| Audience | Use it for |
+| --- | --- |
+| `internal` | Tools you run yourself. Sees what the worker sees. Never ship it to a browser or a customer's device. |
+| `external` | Anything a customer touches. Sensitive facts are removed before retrieval, not after. |
+
+External keys are default-deny: they never receive facts about your team, inferences, or another customer's details. The filtering happens at retrieval, so excluded facts never reach a model or a response.
+
+## Send the key on every request
+
+Set the key in your environment, then pass it in the `Authorization` header:
+
+```bash
+export ALFERA_API_KEY=ak_live_...
+```
+
+```bash
+curl https://api.alfera.ai/v1/memory/search \
+  -H "Authorization: Bearer $ALFERA_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"query":"refund policy","limit":5}'
+```
+
+If your client cannot set an `Authorization` header, `X-Api-Key` works too:
+
+```bash
+curl https://api.alfera.ai/v1/memory/search \
+  -H "X-Api-Key: $ALFERA_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"query":"refund policy","limit":5}'
+```
+
+## Rate limits
+
+Each key gets 120 requests per 60-second window. Past that, requests return `429 rate_limited` with `retry_after_seconds` set to 60. The window is per key, so give each of your services its own key.
+
+```json
+{
+  "error": {
+    "code": "rate_limited",
+    "message": "Rate limit exceeded.",
+    "details": {
+      "retry_after_seconds": 60
+    }
+  }
+}
+```
+
+## Response envelope
+
+Every success is wrapped in `data`. Every failure is wrapped in `error` with a stable `code` you can switch on.
+
+```json
+{ "data": { "facts": [...] } }
+```
+
+```json
+{ "error": { "code": "scope_missing", "message": "This API key is missing the 'memory.write' scope", "details": { "scope": "memory.write" } } }
+```

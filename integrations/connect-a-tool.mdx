@@ -1,0 +1,35 @@
+---
+title: "How to Connect a Tool to Your Alfera Workspace"
+sidebarTitle: "Connect a Tool"
+description: "Add a new integration to Alfera in a few clicks using secure OAuth. Connections are scoped, encrypted, and revocable from your workspace settings."
+---
+
+Connect your favorite tools to Alfera so it can read, write, and act across your entire stack. Every connection uses the tool's own OAuth login screen, so Alfera never stores your password.
+
+<Steps>
+  <Step title="Open Settings">
+    In the Alfera app, click **Settings** in the sidebar menu.
+  </Step>
+  <Step title="Go to Integrations">
+    Select **Integrations** from the settings menu. You will see a library of available tools.
+  </Step>
+  <Step title="Search for the tool">
+    Type the tool name (for example, HubSpot, Stripe, or Google Sheets) into the search bar.
+  </Step>
+  <Step title="Click Connect and sign in">
+    Click **Connect** next to the tool. You will be redirected to the tool's own login screen. Sign in normally and grant permission.
+  </Step>
+  <Step title="Alfera receives a scoped key">
+    After you authorize the connection, Alfera receives a scoped, encrypted OAuth token. Your password is never sent to Alfera.
+  </Step>
+</Steps>
+
+Once connected, you can mention the tool in any Alfera task directly from Slack.
+
+<Warning>
+  Each connection is scoped to only what tasks require. Alfera will never access tools you have not explicitly connected.
+</Warning>
+
+## Next steps
+
+- [Integrations Overview](/integrations/overview) for the full list of supported tools

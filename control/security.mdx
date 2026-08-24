@@ -1,0 +1,41 @@
+---
+title: "Security at Alfera: How Your Data Is Protected"
+sidebarTitle: "Security"
+description: "Alfera encrypts all credentials with AES-256-GCM, never shares or sells your data, never trains models on it, and gives you full control over every connection."
+---
+
+Alfera is built to handle your most sensitive business data. Security is not an afterthought: it is woven into every layer of how Alfera connects to your tools, stores credentials, and runs tasks.
+
+## Never shared or sold
+
+Alfera never shares your data with third parties. Your data is never sold. It is used only to run the tasks you describe.
+
+## Encrypted at rest and in transit
+
+All credentials are encrypted with AES-256-GCM. Data is encrypted in transit and at rest so that even if a connection is intercepted, it remains unreadable.
+
+## Scoped and revocable access
+
+When you connect a tool, Alfera receives only the permissions the task requires. Credentials are scoped tightly and encrypted immediately. You can revoke any connection at any time from your workspace settings. Once revoked, Alfera can no longer access that tool.
+
+<CardGroup cols={2}>
+  <Card title="Scoped permissions" icon="lock">
+    Alfera requests only what each task needs. It does not ask for blanket admin access.
+  </Card>
+
+  <Card title="Revoke any time" icon="x-circle">
+    Remove a connection in Settings \> Integrations with one click. Alfera stops accessing the tool immediately.
+  </Card>
+</CardGroup>
+
+## Approval gates on risky actions
+
+Before any customer-facing or destructive action, Alfera pauses and waits for your one-tap approval. You control whether it sends a message, updates a record, or processes a refund. See [Approvals](/control/approvals) for how to configure what requires review.
+
+## Full readable audit trail
+
+Every run produces a plain-English log of what Alfera read, changed, sent, and skipped. You can review and reverse any action. The audit trail is available on all plans. See [Audit Trail](/control/audit-trail) for details.
+
+## Contact us
+
+If you have a security question or need a copy of our security documentation, reach us directly at [security@alfera.ai](mailto:security@alfera.ai).

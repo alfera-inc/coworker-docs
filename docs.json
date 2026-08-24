@@ -1,13 +1,13 @@
 {
   "$schema": "https://mintlify.com/docs.json",
-  "theme": "mint",
-  "name": "Mintlify Starter Kit",
+  "theme": "luma",
+  "name": "Alfera",
   "colors": {
-    "primary": "#16A34A",
-    "light": "#07C983",
-    "dark": "#15803D"
+    "primary": "#f74e00",
+    "light": "#fca474",
+    "dark": "#f74e00"
   },
-  "favicon": "/favicon.svg",
+  "favicon": "https://media.brand.dev/cce34d5c-600f-49d7-a391-c06944fd4103.svg",
   "navigation": {
     "pages": [
       {
@@ -18,55 +18,80 @@
         ]
       }
     ],
-    "global": {
-      "anchors": [
-        {
-          "anchor": "Documentation",
-          "href": "https://mintlify.com/docs",
-          "icon": "book-open-cover"
-        },
-        {
-          "anchor": "Blog",
-          "href": "https://mintlify.com/blog",
-          "icon": "newspaper"
-        }
-      ]
-    }
-  },
-  "logo": {
-    "light": "/logo/light.svg",
-    "dark": "/logo/dark.svg"
-  },
-  "navbar": {
-    "links": [
+    "tabs": [
       {
-        "label": "Support",
-        "href": "mailto:hi@mintlify.com"
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "index",
+              "quickstart",
+              "how-it-works"
+            ]
+          },
+          {
+            "group": "Use Cases",
+            "pages": [
+              "use-cases/customer-support",
+              "use-cases/sales-follow-up",
+              "use-cases/operations-admin",
+              "use-cases/bookkeeping",
+              "use-cases/scheduling",
+              "use-cases/ecommerce-support"
+            ]
+          },
+          {
+            "group": "Integrations & Connections",
+            "pages": [
+              "integrations/overview",
+              "integrations/connect-a-tool"
+            ]
+          },
+          {
+            "group": "Control & Security",
+            "pages": [
+              "control/approvals",
+              "control/audit-trail",
+              "control/security"
+            ]
+          },
+          {
+            "group": "Plans & Billing",
+            "pages": [
+              "billing/plans",
+              "billing/credits"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "groups": [
+          {
+            "group": "Brain API",
+            "pages": [
+              "api-reference/overview",
+              "api-reference/authentication",
+              "api-reference/memory-search",
+              "api-reference/memory-context",
+              "api-reference/memory-facts",
+              "api-reference/answers"
+            ]
+          },
+          {
+            "group": "Brain MCP Server",
+            "pages": [
+              "api-reference/mcp/overview",
+              "api-reference/mcp/tools"
+            ]
+          }
+        ]
       }
-    ],
-    "primary": {
-      "type": "button",
-      "label": "Dashboard",
-      "href": "https://app.mintlify.com"
-    }
-  },
-  "contextual": {
-    "options": [
-      "copy",
-      "view",
-      "chatgpt",
-      "claude",
-      "perplexity",
-      "mcp",
-      "cursor",
-      "vscode"
     ]
   },
-  "footer": {
-    "socials": {
-      "x": "https://x.com/mintlify",
-      "github": "https://github.com/mintlify",
-      "linkedin": "https://linkedin.com/company/mintlify"
-    }
+  "logo": {
+    "light": "https://media.brand.dev/35654e99-e62f-478c-9bb9-97727f414ab8.svg",
+    "dark": "https://media.brand.dev/35654e99-e62f-478c-9bb9-97727f414ab8.svg"
   }
 }

@@ -1,0 +1,118 @@
+---
+title: "POST /v1/memory/search: Search Workspace Memory"
+sidebarTitle: "Search Memory"
+description: "Search the workspace brain and return ranked matching facts. Scope: memory.read. Pass end_user.id to include facts about a specific person."
+---
+
+Search the workspace brain and return the facts that match your query, ranked by relevance. This is a database query: no model runs on our side, so responses arrive in milliseconds. You can use the results to prompt your own model or to surface relevant context to a user.
+
+## Endpoint
+
+```text
+POST https://api.alfera.ai/v1/memory/search
+```
+
+**Required scope:** `memory.read`
+
+## Request fields
+
+<ParamField body="query" type="string" required>
+  The search query. 1 to 2000 characters.
+</ParamField>
+
+<ParamField body="limit" type="integer">
+  Maximum number of facts to return. 1 to 100. Defaults to `20`.
+</ParamField>
+
+<ParamField body="end_user.id" type="string">
+  Your own identifier for the person asking. Adds facts about that person to the results. Omit it and results stay workspace-general.
+</ParamField>
+
+<ParamField body="end_user.name" type="string">
+  Optional display name for the person.
+</ParamField>
+
+## Example request
+
+```bash
+curl https://api.alfera.ai/v1/memory/search \
+  -H "Authorization: Bearer $ALFERA_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": "refund policy for weddings",
+    "limit": 3,
+    "end_user": {
+      "id": "cust_419",
+      "name": "Maria"
+    }
+  }'
+```
+
+## Example response
+
+```json
+{
+  "data": {
+    "facts": [
+      {
+        "fact_id": "fact_01k9p3v8m7f2ha6z0qc4rjxn5w",
+        "fact_text": "Deposits are non-refundable inside 30 days of the event date.",
+        "kind": "decision",
+        "origin": "user_stated",
+        "subject": "refund policy",
+        "confidence_level": 0.9,
+        "recorded_time": "2026-07-14T09:12:44.318Z"
+      },
+      {
+        "fact_id": "fact_01k9p3v8m7f2ha6z0qc4rjxn7y",
+        "fact_text": "Maria's wedding moved to September 14.",
+        "kind": "profile_fact",
+        "origin": "ingested",
+        "subject": "maria",
+        "confidence_level": 0.7,
+        "recorded_time": "2026-07-30T11:05:22.144Z"
+      }
+    ]
+  }
+}
+```
+
+## Response fields
+
+<ResponseField name="facts" type="array">
+  Ranked list of matching facts, most relevant first.
+
+  <Expandable title="Fact object">
+    <ResponseField name="fact_id" type="string">
+      Stable identifier for the fact.
+    </ResponseField>
+
+    <ResponseField name="fact_text" type="string">
+      The fact in plain English.
+    </ResponseField>
+
+    <ResponseField name="kind" type="string">
+      Category such as `decision`, `profile_fact`, `preference`, or `observation`.
+    </ResponseField>
+
+    <ResponseField name="origin" type="string">
+      Where the fact came from: `user_stated`, `ingested`, `agent_inferred`, `agent_action`, or `system`.
+    </ResponseField>
+
+    <ResponseField name="subject" type="string">
+      The topic or person the fact is about.
+    </ResponseField>
+
+    <ResponseField name="confidence_level" type="number">
+      0 to 1.
+    </ResponseField>
+
+    <ResponseField name="recorded_time" type="string">
+      ISO 8601 timestamp.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<Note>
+  If you are using an `external` audience key, sensitive facts are filtered out at retrieval. External keys never receive facts about your team, `agent_inferred` facts, or facts about an end user you did not name.
+</Note>

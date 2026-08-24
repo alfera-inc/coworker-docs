@@ -1,0 +1,76 @@
+---
+title: "POST /v1/memory/facts: Teach the Brain New Facts"
+sidebarTitle: "Teach Facts"
+description: "Submit new facts to the workspace brain via the same capture pipeline the worker uses. Scope: memory.write. Replaying the same call is safe; duplicates are skipped."
+---
+
+Teach the brain new facts by submitting plain English statements. Each fact runs through the same capture pipeline the Alfera worker uses, so the brain attributes it to a subject, checks for duplicates, and makes it available for future answers and context packets. Replaying the same call is safe: exact duplicates are skipped automatically.
+
+## Endpoint
+
+```text
+POST https://api.alfera.ai/v1/memory/facts
+```
+
+**Required scope:** `memory.write`
+
+## Request fields
+
+<ParamField body="facts" type="array" required>
+  An array of 1 to 20 fact objects.
+
+  <Expandable title="Fact object">
+    <ResponseField name="text" type="string" required>
+      The fact in plain English. 1 to 4000 characters.
+    </ResponseField>
+  </Expandable>
+</ParamField>
+
+## Example request
+
+```bash
+curl https://api.alfera.ai/v1/memory/facts \
+  -H "Authorization: Bearer $ALFERA_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "facts": [
+      {"text": "Maria confirmed the September 14 date by email on July 30."},
+      {"text": "Deposits are non-refundable inside 30 days of the event date."}
+    ]
+  }'
+```
+
+## Example response
+
+```json
+{
+  "data": {
+    "accepted_fact_count": 2,
+    "created": 1,
+    "superseded": 0,
+    "skipped": 1
+  }
+}
+```
+
+## Response fields
+
+<ResponseField name="accepted_fact_count" type="integer">
+  Total number of facts accepted into the pipeline.
+</ResponseField>
+
+<ResponseField name="created" type="integer">
+  How many of those facts were new and stored.
+</ResponseField>
+
+<ResponseField name="superseded" type="integer">
+  How many facts replaced an older version of the same claim.
+</ResponseField>
+
+<ResponseField name="skipped" type="integer">
+  How many facts were exact duplicates of something already known and therefore ignored.
+</ResponseField>
+
+<Note>
+  A `202` status means the facts were accepted. Deduplication happens automatically, so replaying the same call (for example, during a retry) never creates duplicates.
+</Note>

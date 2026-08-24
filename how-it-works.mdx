@@ -1,0 +1,46 @@
+---
+title: "How Alfera Works: From Task to Finished Output"
+sidebarTitle: "How It Works"
+description: "Learn how Alfera reads your request, plans the steps, executes across your connected tools, and hands back a finished result with a full audit trail."
+---
+
+When you describe a task to Alfera, it does not just run a single script. It thinks through the work, decides which tools to use, executes each step, and reports back with a full record of what happened. This page walks through the four-phase loop that powers every run.
+
+## The four-phase loop
+
+Every task Alfera handles moves through four phases: describe, plan, execute, and review.
+
+<Steps>
+  <Step title="Describe">
+    You tell Alfera what you need in plain English, right where you already work. Send a Slack message, an @mention in Teams, or an email. No forms, no dropdowns, no code.
+  </Step>
+  <Step title="Plan">
+    Alfera reads your request, identifies the connected tools involved (such as Gmail, HubSpot, or Google Sheets), and builds a step-by-step plan. It picks the best model for the job from Claude, GPT, Gemini, or Llama.
+  </Step>
+  <Step title="Execute">
+    Alfera runs each step across your tools. It reads data, sends messages, updates records, creates sheets, or generates presentations. If a step is customer-facing or destructive, it pauses and waits for your one-tap approval before continuing.
+  </Step>
+  <Step title="Review">
+    After the run finishes, Alfera delivers a plain-English audit trail: what it read, what it changed, what it sent, and what it skipped. You can review the result, refine the task, and let it run again.
+  </Step>
+</Steps>
+
+## Proactive mode: triggers and schedules
+
+Alfera is not limited to tasks you assign one by one. You can also set it to work proactively. Choose an event trigger, such as a new lead in HubSpot, a missed reply in Gmail, or Monday morning. Alfera will monitor for that event and start the task automatically. You can also schedule tasks to repeat at fixed intervals, so routine work happens without anyone asking.
+
+## What Alfera remembers
+
+Alfera learns and retains your company context across tasks. This includes your ideal customer profile, preferred tone, designated approvers, and company policies. When a new task comes in, Alfera already knows how your team communicates and who needs to sign off, so it does not start from scratch every time.
+
+## Ready to see it in action?
+
+<CardGroup cols={2}>
+  <Card title="Get started in minutes" icon="rocket" href="/quickstart">
+    Connect your first tool and run your first task with the step-by-step quickstart guide.
+  </Card>
+
+  <Card title="Customer support use case" icon="headset" href="/use-cases/customer-support">
+    See how Alfera handles ticket triage, draft replies, and escalation routing.
+  </Card>
+</CardGroup>

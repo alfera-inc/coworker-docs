@@ -1,0 +1,46 @@
+---
+title: "Audit Trail: A Plain-English Record of Every Run"
+sidebarTitle: "Audit Trail"
+description: "Every Alfera run produces a readable log of what it read, changed, sent, and skipped so you can review and reverse any action at any time."
+---
+
+Every time Alfera runs a task, it produces a full audit trail in plain English. The trail tells you exactly what happened, what did not happen, and why. You can review it to understand outcomes, spot issues, or reverse changes.
+
+## What the audit trail contains
+
+Each audit trail includes:
+
+- **What was read**: which tools, records, or files Alfera accessed and when
+- **What was changed**: every edit, update, or creation it performed across connected tools
+- **What was sent**: every email, message, or notification it delivered, with recipients and timestamps
+- **What was skipped**: any step Alfera chose not to run, with the reason (for example, missing data, approval rejection, or policy match)
+- **Sources for each action**: which tools or data points informed each decision
+
+The audit trail is generated automatically. You do not have to configure anything.
+
+## Where to find it
+
+At the end of every run, Alfera posts a summary in Slack with a link to the full audit trail. You can also open the **Dashboard** in the Alfera app, click any past run, and view its complete log.
+
+## How to use it
+
+<Steps>
+  <Step title="Open a past run">
+    In the Alfera app, go to **Dashboard** and click the task you want to review.
+  </Step>
+  <Step title="Expand the audit trail">
+    Scroll through the readable log. Each step is timestamped and linked to the tool where it occurred.
+  </Step>
+  <Step title="Investigate or reverse">
+    If something looks incorrect, use the details to undo the action directly in the original tool, or adjust the task description and rerun it.
+  </Step>
+</Steps>
+
+<Tip>
+  The audit trail is available on all plans, including the free tier. There is no extra configuration needed.
+</Tip>
+
+## Next steps
+
+- [Approvals](/control/approvals) for how sensitive actions are gated
+- [Security](/control/security) for how your data stays protected

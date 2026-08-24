@@ -1,0 +1,52 @@
+---
+title: "Alfera Brain API: Workspace Memory and AI Answers"
+sidebarTitle: "Overview"
+description: "The Brain API gives your product access to your Alfera workspace memory over plain HTTP. Search facts, build context packets, teach new facts, or get AI answers."
+---
+
+The Brain API lets your own product read from and write to your Alfera workspace brain, the same memory your worker uses inside Slack. You call it over plain HTTP with an API key, and it returns JSON or server-sent events.
+
+There are two broad things you can do with the Brain API:
+
+| You want | Call | What happens |
+| --- | --- | --- |
+| Facts | `POST /v1/memory/search`, `POST /v1/memory/context` | A database query. No model runs on our side. Milliseconds. You prompt your own model with the result. |
+| An answer | `POST /v1/answers` | The worker retrieves its own memory, reasons over it, and replies. Streaming, or queued and polled. |
+
+You can also teach the brain new facts with `POST /v1/memory/facts`. The facts go through the same capture pipeline the worker uses, so they are available for future answers and context packets.
+
+The base URL for every call is:
+
+```text
+https://api.alfera.ai
+```
+
+If the agent or tool you are building speaks MCP, you can use the [Brain MCP Server](/api-reference/mcp/overview) instead. It is the same brain, same keys, and same disclosure rules, exposed as tools over Streamable HTTP.
+
+## Quick links
+
+<CardGroup cols={2}>
+  <Card title="Authentication" icon="key" href="/api-reference/authentication">
+    Create an API key, set scopes, and pass it as a Bearer token.
+  </Card>
+
+  <Card title="Search Memory" icon="magnifying-glass" href="/api-reference/memory-search">
+    Query the workspace brain and return ranked facts.
+  </Card>
+
+  <Card title="Memory Context" icon="book" href="/api-reference/memory-context">
+    Build a rendered memory block ready to drop into your own prompt.
+  </Card>
+
+  <Card title="Teach Facts" icon="pen-to-square" href="/api-reference/memory-facts">
+    Submit new facts to the brain via the capture pipeline.
+  </Card>
+
+  <Card title="Answers" icon="message-dots" href="/api-reference/answers">
+    Run the worker on a question and stream or poll the reply.
+  </Card>
+
+  <Card title="Brain MCP Server" icon="robot" href="/api-reference/mcp/overview">
+    Mount the brain as tools in Claude Code, Cursor, or your own agent.
+  </Card>
+</CardGroup>

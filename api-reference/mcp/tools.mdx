@@ -1,0 +1,198 @@
+---
+title: "Brain MCP tools: reference for all available tools"
+sidebarTitle: "MCP Tools"
+description: "Full reference for the six Brain MCP tools: whoami, search_memory, get_memory_context, teach_memory, ask_worker, and wait_for_answer."
+---
+
+The MCP server exposes six tools. Each tool maps directly to a REST counterpart and takes exactly the same arguments.
+
+## Tools summary
+
+| Tool | What it does | Required scope |
+| --- | --- | --- |
+| `whoami` | Reports this connection's key name, prefix, scopes, audience, and rate limit. Call it first. | none |
+| `search_memory` | Searches the workspace brain and returns matching facts, most relevant first. Name the `end_user` to also reach that person's own facts. | `memory.read` |
+| `get_memory_context` | Builds the rendered memory context packet for a query (the same block the worker gets each turn) inside a token budget, for pasting into your own prompt. | `memory.read` |
+| `teach_memory` | Teaches the workspace brain new facts. Each runs through the normal capture pipeline; repeats of something already known are skipped. | `memory.write` |
+| `ask_worker` | Asks the workspace worker a question and waits up to `timeout_seconds`. Returns `{wait_timed_out, answer_id}` if time runs out. | `answers.write` |
+| `wait_for_answer` | Keeps waiting for an answer started earlier, by `answer_id`. | `answers.write` |
+
+## Arguments
+
+| Tool | Arguments |
+| --- | --- |
+| `whoami` | none |
+| `search_memory` | `query` (1–2000 characters), `limit` (1–100, default 20), `end_user` `{id, name?}` |
+| `get_memory_context` | `query` (1–2000 characters), `token_budget` (100–20000, default 1500), `end_user` `{id, name?}` |
+| `teach_memory` | `facts`: 1–20 of `{text}` (up to 4000 characters each) |
+| `ask_worker` | `input` (1–8000 characters), `conversation_id`, `end_user`, `agent_slug`, `timeout_seconds` (0–120, default 60), `idempotency_key` (1–200 characters) |
+| `wait_for_answer` | `answer_id`, `timeout_seconds` (0–120, default 60) |
+
+Each tool takes exactly the arguments its REST counterpart takes as a body and returns exactly what that route returns.
+
+- `search_memory` is `POST /v1/memory/search`
+- `get_memory_context` is `POST /v1/memory/context`
+- `teach_memory` is `POST /v1/memory/facts`
+- `ask_worker` is the queued `POST /v1/answers` plus the wait
+- `wait_for_answer` is `GET /v1/answers/:answer_id` plus the wait
+
+Field-level detail is in the [Brain API reference](/api-reference/overview).
+
+## whoami
+
+Reports this connection's key name, prefix, scopes, audience, and rate limit. Call it first to confirm the connection works and to see what the key is allowed to do.
+
+- **Scope:** none
+- **Arguments:** none
+- **REST equivalent:** none (MCP-only introspection)
+
+## search\_memory
+
+Searches the workspace brain and returns matching facts, most relevant first. Name the `end_user` to also reach that person's own facts.
+
+- **Scope:** `memory.read`
+- **Arguments:**
+  - `query` (string, 1–2000 characters): what to search for
+  - `limit` (integer, 1–100, default 20): maximum facts to return
+  - `end_user` (object, optional): `{id, name?}` to include facts scoped to this person
+- **REST equivalent:** `POST /v1/memory/search`
+
+## get\_memory\_context
+
+Builds the rendered memory context packet for a query: the same block the Alfera worker gets each turn, constrained to a token budget. Use this to paste company context into your own prompt.
+
+- **Scope:** `memory.read`
+- **Arguments:**
+  - `query` (string, 1–2000 characters): the query to build context around
+  - `token_budget` (integer, 100–20000, default 1500): how many tokens to allocate to the context block
+  - `end_user` (object, optional): `{id, name?}` to include facts scoped to this person
+- **REST equivalent:** `POST /v1/memory/context`
+
+## teach\_memory
+
+Teaches the workspace brain new facts. Each fact runs through the normal capture pipeline. Repeats of something already known are skipped automatically.
+
+- **Scope:** `memory.write`
+- **Arguments:**
+  - `facts` (array, 1–20 items): each item is `{text}` with up to 4000 characters
+- **REST equivalent:** `POST /v1/memory/facts`
+
+## ask\_worker
+
+Asks the workspace worker a question and waits up to `timeout_seconds` for the answer. Long answers take minutes, so the wait may time out. When that happens the tool returns an `answer_id` you can poll with `wait_for_answer`.
+
+- **Scope:** `answers.write`
+- **Arguments:**
+  - `input` (string, 1–8000 characters): the question or task
+  - `conversation_id` (string): a stable identifier for the conversation thread
+  - `end_user` (object, optional): `{id, name?}`
+  - `agent_slug` (string): which worker agent to route to
+  - `timeout_seconds` (integer, 0–120, default 60): how long to wait for the answer
+  - `idempotency_key` (string, 1–200 characters): a client-generated key to deduplicate requests
+- **REST equivalent:** queued `POST /v1/answers` plus the wait
+
+## wait\_for\_answer
+
+Keeps waiting for an answer started earlier by its `answer_id`. Each call is a fresh bounded wait, and the answer keeps running the whole time.
+
+- **Scope:** `answers.write`
+- **Arguments:**
+  - `answer_id` (string): the identifier returned by a previous `ask_worker` call
+  - `timeout_seconds` (integer, 0–120, default 60): how long to wait on this call
+- **REST equivalent:** `GET /v1/answers/:answer_id` plus the wait
+
+## Waiting for an answer
+
+`ask_worker` queues the question and waits up to `timeout_seconds`. Answers take seconds to minutes, so long ones outlast the wait. When that happens you get a result, not an error:
+
+```json
+{
+  "wait_timed_out": true,
+  "answer_id": "event_01k9p3zq8w4m1te6h2ndkbx9pf"
+}
+```
+
+Call `wait_for_answer` with that `answer_id` to keep waiting:
+
+```json
+{
+  "answer_id": "event_01k9p3zq8w4m1te6h2ndkbx9pf",
+  "timeout_seconds": 120
+}
+```
+
+Each call is a fresh bounded wait. The answer keeps running the whole time. Repeat as often as needed. Do not raise your client's transport timeout instead.
+
+### Idempotency
+
+Always send `idempotency_key`. Re-calling `ask_worker` after a timeout without the same key is a new question and a second run: double the cost, two answers, and the conversation lock making them queue behind each other.
+
+The same key with the same arguments returns the same `answer_id` and starts nothing. The same key with a different question is refused as `idempotency_key_reused`.
+
+### Skip the wait
+
+Set `timeout_seconds: 0` to skip the wait and return the `answer_id` straight away.
+
+### Finished answer
+
+A finished answer comes back whole. Both answer tools always include `sources`.
+
+```json
+{
+  "answer_id": "event_01k9p3zq8w4m1te6h2ndkbx9pf",
+  "status": "completed",
+  "output_text": "She can move it without losing the deposit, as long as the change lands more than 30 days before the current date.",
+  "conversation_id": "support-ticket-9931",
+  "usage": { "input_tokens": 2841, "output_tokens": 96 },
+  "sources": [
+    {
+      "fact_id": "fact_01k9p3v8m7f2ha6z0qc4rjxn5w",
+      "fact_text": "Deposits are non-refundable inside 30 days of the event date.",
+      "kind": "decision",
+      "subject": "refund policy"
+    }
+  ]
+}
+```
+
+## Errors
+
+### Credential problems
+
+A bad, revoked, or expired key fails the request itself with `401`, before any tool runs:
+
+```json
+{
+  "error": {
+    "code": "api_key_revoked",
+    "message": "This API key was revoked"
+  }
+}
+```
+
+Going over 120 requests in a 60-second window fails with `429 rate_limited`. The limit is per key, so give each client its own key.
+
+### Tool errors
+
+Everything a tool decides comes back as a readable tool result, with `isError: true` and a JSON body your agent can act on:
+
+```json
+{
+  "error": "scope_missing",
+  "message": "This API key is missing the 'memory.write' scope",
+  "http_status": 403
+}
+```
+
+An unknown method or an unknown tool name comes back as a JSON-RPC error (`-32601` and `-32602`), because the request never reached a tool.
+
+### Error reference
+
+| Error | Meaning and fix |
+| --- | --- |
+| `scope_missing` | This key lacks the scope the tool needs. Scopes are fixed at creation, so create a key that has it in **Settings → API Keys**. |
+| `out_of_credits` | The workspace balance hit zero. Add credits or upgrade the plan; nothing runs until you do. |
+| `conversation_busy` | That `conversation_id` is still answering the previous message. Wait, or use a different one. |
+| `validation_error` | The arguments did not match the tool's schema. The message names the offending fields. |
+| `not_found` | No answer with that `answer_id` in this workspace. |
+| `internal_error` | Our side. Retry; if it persists, send us the timestamp. |
